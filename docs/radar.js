@@ -39,19 +39,23 @@ function radar_visualization(config) {
     return min + (random() + random()) * 0.5 * (max - min);
   }
 
-  // radial_min / radial_max are multiples of PI
-  const quadrants = [
-    { radial_min: 0, radial_max: 0.5, factor_x: 1, factor_y: 1 },
-    { radial_min: 0.5, radial_max: 1, factor_x: -1, factor_y: 1 },
-    { radial_min: -1, radial_max: -0.5, factor_x: -1, factor_y: -1 },
-    { radial_min: -0.5, radial_max: 0, factor_x: 1, factor_y: -1 }
-  ];
+  const upper_ring =  { min: 0,  max: -1, direction: -1};
+  const lower_ring =  { min: 1, max: 0, direction: 1 };
+  const center_ring = { min: -1,   max: 1, direction: 0};
 
-  const rings = [
-    { radius: 130 },
-    { radius: 220 },
-    { radius: 310 },
-    { radius: 400 }
+  const upper_box =  { x_min: -400, x_max: 400, y_min: -15,  y_max: -400 };
+  const lower_box =  { x_min: -400, x_max: 400, y_min: 15,   y_max: 400 };
+  const center_box = { x_min: -140, x_max: 140, y_min: -140, y_max: 140 };
+
+
+  const zones = [
+    { ring: upper_ring, box: upper_box, radius_max: 400, radius_min: 310 },
+    { ring: upper_ring, box: upper_box, radius_max: 310, radius_min: 220 },
+    { ring: upper_ring, box: upper_box, radius_max: 220, radius_min: 130 },
+    { ring: center_ring, box: upper_box, radius_max: 130, radius_min: 30 },
+    { ring: lower_ring, box: lower_box, radius_max: 220, radius_min: 130 },
+    { ring: lower_ring, box: lower_box, radius_max: 310, radius_min: 220 },
+    { ring: lower_ring, box: lower_box, radius_max: 400, radius_min: 310 }
   ];
 
   const title_offset =
@@ -61,10 +65,13 @@ function radar_visualization(config) {
     { x: -675, y: 420 };
 
   const legend_offset = [
-    { x: 450, y: 90 },
-    { x: -675, y: 90 },
     { x: -675, y: -310 },
-    { x: 450, y: -310 }
+    { x: -675, y: 0 },
+    { x: -675, y: 110 },
+    { x: 0,    y: 460 },
+    { x: 450, y: -310 },
+    { x: 450, y: 0},
+    { x: 450, y: 110 }
   ];
 
   function polar(cartesian) {
@@ -104,22 +111,22 @@ function radar_visualization(config) {
     }
   }
 
-  function segment(quadrant, ring) {
+  function segment(zone_id) {
     var polar_min = {
-      t: quadrants[quadrant].radial_min * Math.PI,
-      r: ring == 0 ? 30 : rings[ring - 1].radius
+      t: zones[zone_id].ring.min * Math.PI,
+      r: zones[zone_id].radius_min
     };
     var polar_max = {
-      t: quadrants[quadrant].radial_max * Math.PI,
-      r: rings[ring].radius
+      t: zones[zone_id].ring.max * Math.PI,
+      r: zones[zone_id].radius_max
     };
     var cartesian_min = {
-      x: 15 * quadrants[quadrant].factor_x,
-      y: 15 * quadrants[quadrant].factor_y
+      x: zones[zone_id].box.x_min,
+      y: zones[zone_id].box.y_min
     };
     var cartesian_max = {
-      x: rings[3].radius * quadrants[quadrant].factor_x,
-      y: rings[3].radius * quadrants[quadrant].factor_y
+      x: zones[zone_id].box.x_max,
+      y: zones[zone_id].box.y_max
     };
     return {
       clipx: function(d) {
@@ -146,43 +153,38 @@ function radar_visualization(config) {
   // position each entry randomly in its segment
   for (var i = 0; i < config.entries.length; i++) {
     var entry = config.entries[i];
-    entry.segment = segment(entry.quadrant, entry.ring);
+    entry.segment = segment(entry.zone);
     var point = entry.segment.random();
     entry.x = point.x;
     entry.y = point.y;
     entry.color = entry.active || config.print_layout ?
-      config.rings[entry.ring].color : config.colors.inactive;
+      config.zones[entry.zone].color : config.colors.inactive;
   }
 
   // partition entries according to segments
-  var segmented = new Array(4);
-  for (var quadrant = 0; quadrant < 4; quadrant++) {
-    segmented[quadrant] = new Array(4);
-    for (var ring = 0; ring < 4; ring++) {
-      segmented[quadrant][ring] = [];
-    }
+  var segmented = new Array(7);
+  for (var zone = 0; zone < 7; zone++) {
+    segmented[zone] = [];
   }
   for (var i=0; i<config.entries.length; i++) {
     var entry = config.entries[i];
-    segmented[entry.quadrant][entry.ring].push(entry);
+    segmented[entry.zone].push(entry);
   }
 
   // assign unique sequential id to each entry
   var id = 1;
-  for (var quadrant of [2,3,1,0]) {
-    for (var ring = 0; ring < 4; ring++) {
-      var entries = segmented[quadrant][ring];
+  for (var zone = 0; zone < 7; zone++) {
+      var entries = segmented[zone];
       entries.sort(function(a,b) { return a.label.localeCompare(b.label); })
       for (var i=0; i<entries.length; i++) {
         entries[i].id = "" + id++;
       }
-    }
   }
 
   function translate(x, y) {
     return "translate(" + x + "," + y + ")";
   }
-
+/*
   function viewbox(quadrant) {
     return [
       Math.max(0, quadrants[quadrant].factor_x * 400) - 420,
@@ -191,22 +193,23 @@ function radar_visualization(config) {
       440
     ].join(" ");
   }
-
+*/
   var svg = d3.select("svg#" + config.svg_id)
     .style("background-color", config.colors.background)
     .attr("width", config.width)
     .attr("height", config.height);
 
   var radar = svg.append("g");
-  if ("zoomed_quadrant" in config) {
-    svg.attr("viewBox", viewbox(config.zoomed_quadrant));
-  } else {
+//  if ("zoomed_quadrant" in config) {
+//    svg.attr("viewBox", viewbox(config.zoomed_quadrant));
+//  } else {
     radar.attr("transform", translate(config.width / 2, config.height / 2));
-  }
+//  }
 
   var grid = radar.append("g");
 
   // draw grid lines
+// FIXME
   grid.append("line")
     .attr("x1", 0).attr("y1", -400)
     .attr("x2", 0).attr("y2", 400)
@@ -214,23 +217,33 @@ function radar_visualization(config) {
     .style("stroke-width", 1);
   grid.append("line")
     .attr("x1", -400).attr("y1", 0)
-    .attr("x2", 400).attr("y2", 0)
+    .attr("x2", -130).attr("y2", 0)
+    .style("stroke", config.colors.grid)
+    .style("stroke-width", 3);
+  grid.append("line")
+    .attr("x1", -130).attr("y1", 0)
+    .attr("x2", 130).attr("y2", 0)
     .style("stroke", config.colors.grid)
     .style("stroke-width", 1);
+  grid.append("line")
+    .attr("x1", 130).attr("y1", 0)
+    .attr("x2", 400).attr("y2", 0)
+    .style("stroke", config.colors.grid)
+    .style("stroke-width", 3);
 
   // draw rings
-  for (var i = 0; i < rings.length; i++) {
+  for (var i = 0; i < zones.length; i++) {
     grid.append("circle")
       .attr("cx", 0)
       .attr("cy", 0)
-      .attr("r", rings[i].radius)
+      .attr("r", zones[i].radius_max)
       .style("fill", "none")
       .style("stroke", config.colors.grid)
-      .style("stroke-width", 1);
+      .style("stroke-width", 3);
     if (config.print_layout) {
       grid.append("text")
-        .text(config.rings[i].name)
-        .attr("y", -rings[i].radius + 62)
+        .text(config.zones[i].name)
+        .attr("y", zones[i].ring.direction * (zones[i].radius_max - 52))
         .attr("text-anchor", "middle")
         .style("fill", "#e5e5e5")
         .style("font-family", "Arial, Helvetica")
@@ -241,6 +254,7 @@ function radar_visualization(config) {
     }
   }
 
+// ??
   function legend_transform(quadrant, ring, index=null) {
     var dx = ring < 2 ? 0 : 120;
     var dy = (index == null ? -16 : index * 12);
@@ -273,32 +287,15 @@ function radar_visualization(config) {
 
     // legend
     var legend = radar.append("g");
-    for (var quadrant = 0; quadrant < 4; quadrant++) {
+    for (var zone_id = 0; zone_id < 7; zone_id++) {
       legend.append("text")
         .attr("transform", translate(
-          legend_offset[quadrant].x,
-          legend_offset[quadrant].y - 45
+          legend_offset[zone_id].x,
+          legend_offset[zone_id].y - 45
         ))
-        .text(config.quadrants[quadrant].name)
+        .text(config.zones[zone_id].name)
         .style("font-family", "Arial, Helvetica")
         .style("font-size", "18");
-      for (var ring = 0; ring < 4; ring++) {
-        legend.append("text")
-          .attr("transform", legend_transform(quadrant, ring))
-          .text(config.rings[ring].name)
-          .style("font-family", "Arial, Helvetica")
-          .style("font-size", "12")
-          .style("font-weight", "bold");
-        legend.selectAll(".legend" + quadrant + ring)
-          .data(segmented[quadrant][ring])
-          .enter()
-            .append("text")
-              .attr("class", "legend" + quadrant + ring)
-              .attr("transform", function(d, i) { return legend_transform(quadrant, ring, i); })
-              .text(function(d, i) { return d.id + ". " + d.label; })
-              .style("font-family", "Arial, Helvetica")
-              .style("font-size", "11");
-      }
     }
   }
 
@@ -403,7 +400,7 @@ function radar_visualization(config) {
   // distribute blips, while avoiding collisions
   d3.forceSimulation()
     .nodes(config.entries)
-    .velocityDecay(0.19) // magic number (found by experimentation)
+    .velocityDecay(0.3) // magic number (found by experimentation)
     .force("collision", d3.forceCollide().radius(12).strength(0.85))
     .on("tick", ticked);
 }
