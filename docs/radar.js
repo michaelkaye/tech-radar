@@ -341,6 +341,35 @@ function radar_visualization(config) {
     }
   }
 
+  function CalculateStarPoints(arms, outerRadius, innerRadius)
+{
+   var results = "";
+
+   var angle = Math.PI / arms;
+
+   for (var i = 0; i < 2 * arms; i++)
+   {
+      // Use outer or inner radius depending on what iteration we are in.
+      var r = (i & 1) == 0 ? outerRadius : innerRadius;
+      
+      var currX = Math.cos(i * angle) * r;
+      var currY = Math.sin(i * angle) * r;
+
+      // Our first time we simply append the coordinates, subsequet times
+      // we append a ", " to distinguish each coordinate pair.
+      if (i == 0)
+      {
+         results = "M " + currX + "," + currY;
+      }
+      else
+      {
+         results += ", " + currX + "," + currY;
+      }
+   }
+
+   return results;
+}
+
   function hideBubble(d) {
     var bubble = d3.select("#bubble")
       .attr("transform", translate(0,0))
@@ -362,19 +391,18 @@ function radar_visualization(config) {
       blip.append("a")
         .attr("xlink:href", d.link);
     }
-    if (d.moved > 0) {
+
+    var size = 9;
+    if (d.moved) {
       blip.append("path")
-        .attr("d", "M -11,5 11,5 0,-13 z") // triangle pointing up
-        .style("fill", d.color);
-    } else if (d.moved < 0) {
-      blip.append("path")
-        .attr("d", "M -11,-5 11,-5 0,13 z") // triangle pointing down
-        .style("fill", d.color);
+       .attr("d", CalculateStarPoints(5, 6, 13))
+       .style("fill", d.color);
     } else {
       blip.append("circle")
         .attr("r", 9)
         .attr("fill", d.color);
     }
+    
   });
 
   if (config.print_layout) {
