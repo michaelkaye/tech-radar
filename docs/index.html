@@ -38,7 +38,9 @@
 
 url = new URL(location.href);
 var zoomed = url.searchParams.get("z");
-
+if ( typeof zoomed == 'undefined') {
+	zoomed = null;
+}
 radar_visualization({
   svg_id: "radar",
   width: 1450,
@@ -68,8 +70,16 @@ radar_visualization({
   entries: [
       {
         quadrant: 0,
+        ring: 1,
+        label: "AWS SNS & SQS",
+        active: false,
+        link: "1.html",
+        moved: 0
+      },
+      {
+        quadrant: 0,
         ring: 0,
-        label: "AWS",
+        label: "AWS RDS",
         active: false,
         link: "1.html",
         moved: 0
@@ -190,7 +200,7 @@ The Tech Radar is a list of technologies, showing their progress through our ass
 <h3>What is the purpose?</h3>
 
 <p>
-The Tech Radar is a tool to inspire and support engineering teams at Zalando to pick the best technologies for new projects; it provides a platform to share knowledge and experience in technologies, to reflect on technology decisions and continuously evolve our technology landscape. Based on the <a href="https://www.thoughtworks.com/radar">pioneering work of ThoughtWorks</a>, our Tech Radar sets out the changes in technologies that are interesting in software development &mdash; changes that we think our engineering teams should pay attention to and consider using in their projects.
+The Tech Radar is based on code by <a href="https://github.com/zalano/tech-radar/">Zalando</a> originally based on the <a href="https://www.thoughtworks.com/radar">pioneering work of ThoughtWorks</a>, our Tech Radar sets out the changes in technologies that are interesting in software development &mdash; changes that we think our engineering teams should pay attention to and consider using in their projects.
 </p>
 </td></tr>
 </table>
