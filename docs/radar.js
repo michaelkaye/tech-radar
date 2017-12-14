@@ -48,9 +48,10 @@ function radar_visualization(config) {
   ];
 
   const rings = [
-    { radius: 130 },
-    { radius: 220 },
-    { radius: 310 },
+    { radius: 110 },
+    { radius: 180 },
+    { radius: 250 },
+    { radius: 330 },
     { radius: 400 }
   ];
 
@@ -157,8 +158,8 @@ function radar_visualization(config) {
   // partition entries according to segments
   var segmented = new Array(4);
   for (var quadrant = 0; quadrant < 4; quadrant++) {
-    segmented[quadrant] = new Array(4);
-    for (var ring = 0; ring < 4; ring++) {
+    segmented[quadrant] = new Array(5);
+    for (var ring = 0; ring < 5; ring++) {
       segmented[quadrant][ring] = [];
     }
   }
@@ -170,7 +171,7 @@ function radar_visualization(config) {
   // assign unique sequential id to each entry
   var id = 1;
   for (var quadrant of [2,3,1,0]) {
-    for (var ring = 0; ring < 4; ring++) {
+    for (var ring = 0; ring < 5; ring++) {
       var entries = segmented[quadrant][ring];
       entries.sort(function(a,b) { return a.label.localeCompare(b.label); })
       for (var i=0; i<entries.length; i++) {
@@ -198,7 +199,7 @@ function radar_visualization(config) {
     .attr("height", config.height);
 
   var radar = svg.append("g");
-  if ("zoomed_quadrant" in config) {
+  if ("zoomed_quadrant" in config && config.zoomed_quadrant != null) {
     svg.attr("viewBox", viewbox(config.zoomed_quadrant));
   } else {
     radar.attr("transform", translate(config.width / 2, config.height / 2));
@@ -242,10 +243,13 @@ function radar_visualization(config) {
   }
 
   function legend_transform(quadrant, ring, index=null) {
-    var dx = ring < 2 ? 0 : 120;
+    var dx = ring < 3 ? 0 : 120;
     var dy = (index == null ? -16 : index * 12);
-    if (ring % 2 == 1) {
+    if (ring % 3 == 1) {
       dy = dy + 36 + segmented[quadrant][ring-1].length * 12;
+    }
+    if (ring % 3 == 2) {
+      dy = dy + 72 + (segmented[quadrant][ring-1].length + segmented[quadrant][ring-2].length )* 12;
     }
     return translate(
       legend_offset[quadrant].x + dx,
@@ -263,14 +267,6 @@ function radar_visualization(config) {
       .style("font-family", "Arial, Helvetica")
       .style("font-size", "34");
 
-    // footer
-    radar.append("text")
-      .attr("transform", translate(footer_offset.x, footer_offset.y))
-      .text("▲ moved up     ▼ moved down")
-      .attr("xml:space", "preserve")
-      .style("font-family", "Arial, Helvetica")
-      .style("font-size", "10");
-
     // legend
     var legend = radar.append("g");
     for (var quadrant = 0; quadrant < 4; quadrant++) {
@@ -282,7 +278,7 @@ function radar_visualization(config) {
         .text(config.quadrants[quadrant].name)
         .style("font-family", "Arial, Helvetica")
         .style("font-size", "18");
-      for (var ring = 0; ring < 4; ring++) {
+      for (var ring = 0; ring < 5; ring++) {
         legend.append("text")
           .attr("transform", legend_transform(quadrant, ring))
           .text(config.rings[ring].name)
@@ -320,7 +316,7 @@ function radar_visualization(config) {
     .style("fill", "#333");
   bubble.append("text")
     .style("font-family", "sans-serif")
-    .style("font-size", "10px")
+    .style("font-size", "18px")
     .style("fill", "#fff");
   bubble.append("path")
     .attr("d", "M 0,0 10,0 5,8 z")
@@ -350,6 +346,34 @@ function radar_visualization(config) {
       .style("opacity", 0);
   }
 
+function CalculateStarPoints(arms, outerRadius, innerRadius)
+{
+   var results = "";
+
+   var angle = Math.PI / arms;
+
+   for (var i = 0; i < 2 * arms; i++)
+   {
+      // Use outer or inner radius depending on what iteration we are in.
+      var r = (i & 1) == 0 ? outerRadius : innerRadius;
+      
+      var currX = Math.cos(i * angle) * r;
+      var currY = Math.sin(i * angle) * r;
+
+      // Our first time we simply append the coordinates, subsequet times
+      // we append a ", " to distinguish each coordinate pair.
+      if (i == 0)
+      {
+         results = "M " + currX + "," + currY;
+      }
+      else
+      {
+         results += ", " + currX + "," + currY;
+      }
+   }
+
+   return results;
+}
   // draw blips on radar
   var blips = rink.selectAll(".blip")
     .data(config.entries)
@@ -372,7 +396,7 @@ function radar_visualization(config) {
     // blip shape
     if (d.moved > 0) {
       blip.append("path")
-        .attr("d", "M -11,5 11,5 0,-13 z") // triangle pointing up
+        .attr("d", CalculateStarPoints(5, 9, 15))
         .style("fill", d.color);
     } else if (d.moved < 0) {
       blip.append("path")
@@ -380,7 +404,7 @@ function radar_visualization(config) {
         .style("fill", d.color);
     } else {
       blip.append("circle")
-        .attr("r", 9)
+        .attr("r", 12)
         .attr("fill", d.color);
     }
 
@@ -389,11 +413,11 @@ function radar_visualization(config) {
       var blip_text = config.print_layout ? d.id : d.label.match(/[a-z]/i);
       blip.append("text")
         .text(blip_text)
-        .attr("y", 3)
+        .attr("y", 5)
         .attr("text-anchor", "middle")
         .style("fill", "#fff")
         .style("font-family", "Arial, Helvetica")
-        .style("font-size", function(d) { return blip_text.length > 2 ? "8" : "9"; })
+        .style("font-size", function(d) { return blip_text.length > 2 ? "13" : "15"; })
         .style("pointer-events", "none")
         .style("user-select", "none");
     }
