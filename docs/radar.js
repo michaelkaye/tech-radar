@@ -277,14 +277,13 @@ function radar_visualization(config) {
         ))
         .text(config.quadrants[quadrant].name)
         .style("font-family", "Arial, Helvetica")
-        .style("font-size", "18");
+        .style("font-size", "15");
       for (var ring = 0; ring < 5; ring++) {
         legend.append("text")
           .attr("transform", legend_transform(quadrant, ring))
           .text(config.rings[ring].name)
           .style("font-family", "Arial, Helvetica")
-          .style("font-size", "12")
-          .style("font-weight", "bold");
+          .style("font-size", "15");
         legend.selectAll(".legend" + quadrant + ring)
           .data(segmented[quadrant][ring])
           .enter()
@@ -293,7 +292,8 @@ function radar_visualization(config) {
               .attr("transform", function(d, i) { return legend_transform(quadrant, ring, i); })
               .text(function(d, i) { return d.id + ". " + d.label; })
               .style("font-family", "Arial, Helvetica")
-              .style("font-size", "11");
+              .style("font-size", "14")
+	      .style("color", function(d,i) {return d.color});
       }
     }
   }
@@ -316,7 +316,7 @@ function radar_visualization(config) {
     .style("fill", "#333");
   bubble.append("text")
     .style("font-family", "sans-serif")
-    .style("font-size", "24px")
+    .style("font-size", "35px")
     .style("fill", "#fff");
   bubble.append("path")
     .attr("d", "M 0,0 10,0 5,8 z")
@@ -334,7 +334,8 @@ function radar_visualization(config) {
         .attr("x", -10)
         .attr("y", -bbox.height)
         .attr("width", bbox.width + 20)
-        .attr("height", bbox.height + 4);
+        .attr("height", bbox.height + 10)
+	.attr("background-color", d.color);
       d3.select("#bubble path")
         .attr("transform", translate(bbox.width / 2 - 5, 3));
     }
@@ -388,7 +389,7 @@ function CalculateStarPoints(arms, outerRadius, innerRadius)
     var blip = d3.select(this);
 
     // blip link
-    if (!config.print_layout && d.active && d.hasOwnProperty("link")) {
+    if (d.hasOwnProperty("link")) {
       blip = blip.append("a")
         .attr("xlink:href", d.link);
     }
@@ -396,11 +397,7 @@ function CalculateStarPoints(arms, outerRadius, innerRadius)
     // blip shape
     if (d.moved > 0) {
       blip.append("path")
-        .attr("d", CalculateStarPoints(5, 9, 15))
-        .style("fill", d.color);
-    } else if (d.moved < 0) {
-      blip.append("path")
-        .attr("d", "M -11,-5 11,-5 0,13 z") // triangle pointing down
+        .attr("d", CalculateStarPoints(5, 11, 20))
         .style("fill", d.color);
     } else {
       blip.append("circle")
