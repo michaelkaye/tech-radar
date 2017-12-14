@@ -316,7 +316,7 @@ function radar_visualization(config) {
     .style("fill", "#333");
   bubble.append("text")
     .style("font-family", "sans-serif")
-    .style("font-size", "18px")
+    .style("font-size", "24px")
     .style("fill", "#fff");
   bubble.append("path")
     .attr("d", "M 0,0 10,0 5,8 z")
@@ -329,11 +329,11 @@ function radar_visualization(config) {
       var bbox = tooltip.node().getBBox();
       d3.select("#bubble")
         .attr("transform", translate(d.x - bbox.width / 2, d.y - 16))
-        .style("opacity", 0.8);
+        .style("opacity", 0.9);
       d3.select("#bubble rect")
-        .attr("x", -5)
+        .attr("x", -10)
         .attr("y", -bbox.height)
-        .attr("width", bbox.width + 10)
+        .attr("width", bbox.width + 20)
         .attr("height", bbox.height + 4);
       d3.select("#bubble path")
         .attr("transform", translate(bbox.width / 2 - 5, 3));
