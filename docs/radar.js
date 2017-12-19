@@ -63,8 +63,8 @@ function radar_visualization(config) {
 
   const legend_offset = [
     { x: 450, y: 90 },
-    { x: -675, y: 90 },
-    { x: -675, y: -310 },
+    { x: -795, y: 90 },
+    { x: -795, y: -310 },
     { x: 450, y: -310 }
   ];
 
@@ -243,7 +243,7 @@ function radar_visualization(config) {
   }
 
   function legend_transform(quadrant, ring, index=null) {
-    var dx = ring < 3 ? 0 : 120;
+    var dx = ring < 3 ? 0 : 240;
     var dy = (index == null ? -16 : index * 12);
     if (ring % 3 == 1) {
       dy = dy + 36 + segmented[quadrant][ring-1].length * 12;
