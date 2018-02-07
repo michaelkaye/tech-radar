@@ -67,6 +67,7 @@ function radar_visualization(config) {
     { x: -795, y: -310 },
     { x: 450, y: -310 }
   ];
+  const mapping = [2,1,0,3,4];
 
   function polar(cartesian) {
     var x = cartesian.x;
@@ -103,6 +104,36 @@ function radar_visualization(config) {
       x: bounded_interval(point.x, min.x, max.x),
       y: bounded_interval(point.y, min.y, max.y)
     }
+  }
+
+  function boxed(quadrant, ring) {
+    var min = {
+      x: mapping[ring] * config.s_width /5, 
+      y: quadrant  * config.s_height /4
+    }
+    var max = {
+      x: (mapping[ring] +1) * config.s_width / 5,
+      y: (quadrant + 1) * config.s_height / 4
+    }
+
+    return {
+      clipx: function(d) {
+        var x =  bounded_box(d, min, max).x;
+              d.x = x;
+              return x;
+      },
+      clipy: function(d){
+        var y =  bounded_box(d, min, max).y;
+              d.y = y;
+              return y;
+      },
+      random: function(d){
+        return {
+                x: normal_between(min.x, max.x),
+                y: normal_between(min.y, max.y)
+        };
+      }
+    };
   }
 
   function segment(quadrant, ring) {
@@ -147,7 +178,11 @@ function radar_visualization(config) {
   // position each entry randomly in its segment
   for (var i = 0; i < config.entries.length; i++) {
     var entry = config.entries[i];
-    entry.segment = segment(entry.quadrant, entry.ring);
+   if(config.widemode) {
+      entry.segment = boxed(entry.quadrant, entry.ring);
+   } else {
+      entry.segment = segment(entry.quadrant, entry.ring);
+   }
     var point = entry.segment.random();
     entry.x = point.x;
     entry.y = point.y;
@@ -199,105 +234,154 @@ function radar_visualization(config) {
     .attr("height", config.height);
 
   var radar = svg.append("g");
-  if ("zoomed_quadrant" in config && config.zoomed_quadrant != null) {
-    svg.attr("viewBox", viewbox(config.zoomed_quadrant));
-  } else {
-    radar.attr("transform", translate(config.width / 2, config.height / 2));
-  }
-
-  var grid = radar.append("g");
-
-  // draw grid lines
-  grid.append("line")
-    .attr("x1", 0).attr("y1", -400)
-    .attr("x2", 0).attr("y2", 400)
-    .style("stroke", config.colors.grid)
-    .style("stroke-width", 1);
-  grid.append("line")
-    .attr("x1", -400).attr("y1", 0)
-    .attr("x2", 400).attr("y2", 0)
-    .style("stroke", config.colors.grid)
-    .style("stroke-width", 1);
-
-  // draw rings
-  for (var i = 0; i < rings.length; i++) {
-    grid.append("circle")
-      .attr("cx", 0)
-      .attr("cy", 0)
-      .attr("r", rings[i].radius)
-      .style("fill", "none")
-      .style("stroke", config.colors.grid)
-      .style("stroke-width", 1);
-    if (config.print_layout) {
-      grid.append("text")
-        .text(config.rings[i].name)
-        .attr("y", -rings[i].radius + 62)
-        .attr("text-anchor", "middle")
-        .style("fill", "#e5e5e5")
-        .style("font-family", "Arial, Helvetica")
-        .style("font-size", 42)
-        .style("font-weight", "bold")
-        .style("pointer-events", "none")
-        .style("user-select", "none");
-    }
-  }
-
-  function legend_transform(quadrant, ring, index=null) {
-    var dx = ring < 3 ? 0 : 240;
-    var dy = (index == null ? -16 : index * 12);
-    if (ring % 3 == 1) {
-      dy = dy + 36 + segmented[quadrant][ring-1].length * 12;
-    }
-    if (ring % 3 == 2) {
-      dy = dy + 72 + (segmented[quadrant][ring-1].length + segmented[quadrant][ring-2].length )* 12;
-    }
-    return translate(
-      legend_offset[quadrant].x + dx,
-      legend_offset[quadrant].y + dy
-    );
-  }
-
-  // draw title and legend (only in print layout)
-  if (config.print_layout) {
-
-    // title
-    radar.append("text")
-      .attr("transform", translate(title_offset.x, title_offset.y))
-      .text(config.title)
-      .style("font-family", "Arial, Helvetica")
-      .style("font-size", "34");
-
-    // legend
-    var legend = radar.append("g");
-    for (var quadrant = 0; quadrant < 4; quadrant++) {
-      legend.append("text")
-        .attr("transform", translate(
-          legend_offset[quadrant].x,
-          legend_offset[quadrant].y - 45
-        ))
-        .text(config.quadrants[quadrant].name)
-        .style("font-family", "Arial, Helvetica")
-        .style("font-size", "15");
-      for (var ring = 0; ring < 5; ring++) {
-        legend.append("text")
-          .attr("transform", legend_transform(quadrant, ring))
-          .text(config.rings[ring].name)
-          .style("font-family", "Arial, Helvetica")
-          .style("font-size", "15");
-        legend.selectAll(".legend" + quadrant + ring)
-          .data(segmented[quadrant][ring])
-          .enter()
-            .append("text")
-              .attr("class", "legend" + quadrant + ring)
-              .attr("transform", function(d, i) { return legend_transform(quadrant, ring, i); })
-              .text(function(d, i) { return d.id + ". " + d.label; })
-              .style("font-family", "Arial, Helvetica")
-              .style("font-size", "14")
+  if (config.widemode) {
+  	radar.attr("transform", translate(50,50));
+	var grid = radar.append("g");
+	for (var x = 0 ; x <= 5; x++) {
+		grid.append("line")
+		.attr("x1", x*config.s_width/5).attr("y1",config.s_height)
+		.attr("x2", x*config.s_width/5).attr("y2",0)
+		.style("stroke","red")
+		.style("stroke-width",1);
+	}
+	for (var y = 0 ; y <= 4; y++) {
+		grid.append("line")
+		.attr("x1", config.s_width).attr("y1",y * config.s_height / 4)
+		.attr("x2", 0, ).attr("y2",y * config.s_height / 4)
+		.style("stroke",config.colors.grid)
+		.style("stroke-width",1);
+	}
+	for (var x = 0 ; x < rings.length; x++) {
+	   grid.append("text")
+		.text(config.rings[mapping[x]].name)
+		.attr("transform", "translate("+((config.s_width/5*x) +62)+",200) rotate(90)")
+		.attr("text-anchor", "middle")
+		.style("fill", "#e5e5e5")
+		.style("font-family", "Arial, Helvetica")
+		.style("font-size", 42)
+		.style("font-weight", "bold")
+		.style("pointer-events", "none")
+		.style("user-select", "none");
+	}	
+	    var legend = radar.append("g")
+	       .attr("transform", translate(config.s_width + 50, 50));
+	    config.entries.sort(function(a,b) {
+		    return a.id -b.id;
+	    });
+    legend.selectAll(".legend")
+	  .data(config.entries)
+	  .enter()
+	    .append("text")
+	      .attr("class", "legend" + quadrant + ring)
+	      .attr("transform", function(d, i) { return translate(0,i*14) })
+	      .text(function(d, i) { return d.id + ". " + d.label; })
+	      .style("font-family", "Arial, Helvetica")
+	      .style("font-size", "14")
 	      .style("color", function(d,i) {return d.color});
-      }
-    }
-  }
+      
+    
 
+  } else {
+
+	  if ("zoomed_quadrant" in config && config.zoomed_quadrant != null) {
+	    svg.attr("viewBox", viewbox(config.zoomed_quadrant));
+	  } else {
+	    radar.attr("transform", translate(config.width / 2, config.height / 2));
+	  }
+
+	  var grid = radar.append("g");
+
+	  // draw grid lines
+	  grid.append("line")
+	    .attr("x1", 0).attr("y1", -400)
+	    .attr("x2", 0).attr("y2", 400)
+	    .style("stroke", config.colors.grid)
+	    .style("stroke-width", 1);
+	  grid.append("line")
+	    .attr("x1", -400).attr("y1", 0)
+	    .attr("x2", 400).attr("y2", 0)
+	    .style("stroke", config.colors.grid)
+	    .style("stroke-width", 1);
+
+	  // draw rings
+	  for (var i = 0; i < rings.length; i++) {
+	    grid.append("circle")
+	      .attr("cx", 0)
+	      .attr("cy", 0)
+	      .attr("r", rings[i].radius)
+	      .style("fill", "none")
+	      .style("stroke", config.colors.grid)
+	      .style("stroke-width", 1);
+	    if (config.print_layout) {
+	      grid.append("text")
+		.text(config.rings[i].name)
+		.attr("y", -rings[i].radius + 62)
+		.attr("text-anchor", "middle")
+		.style("fill", "#e5e5e5")
+		.style("font-family", "Arial, Helvetica")
+		.style("font-size", 42)
+		.style("font-weight", "bold")
+		.style("pointer-events", "none")
+		.style("user-select", "none");
+	    }
+	  }
+
+	  function legend_transform(quadrant, ring, index=null) {
+	    var dx = ring < 3 ? 0 : 240;
+	    var dy = (index == null ? -16 : index * 12);
+	    if (ring % 3 == 1) {
+	      dy = dy + 36 + segmented[quadrant][ring-1].length * 12;
+	    }
+	    if (ring % 3 == 2) {
+	      dy = dy + 72 + (segmented[quadrant][ring-1].length + segmented[quadrant][ring-2].length )* 12;
+	    }
+	    return translate(
+	      legend_offset[quadrant].x + dx,
+	      legend_offset[quadrant].y + dy
+	    );
+	  }
+
+	  // draw title and legend (only in print layout)
+	  if (config.print_layout) {
+
+	    // title
+	    radar.append("text")
+	      .attr("transform", translate(title_offset.x, title_offset.y))
+	      .text(config.title)
+	      .style("font-family", "Arial, Helvetica")
+	      .style("font-size", "34");
+
+	    // legend
+	    var legend = radar.append("g");
+	    for (var quadrant = 0; quadrant < 4; quadrant++) {
+	      legend.append("text")
+		.attr("transform", translate(
+		  legend_offset[quadrant].x,
+		  legend_offset[quadrant].y - 45
+		))
+		.text(config.quadrants[quadrant].name)
+		.style("font-family", "Arial, Helvetica")
+		.style("font-size", "15");
+	      for (var ring = 0; ring < 5; ring++) {
+		legend.append("text")
+		  .attr("transform", legend_transform(quadrant, ring))
+		  .text(config.rings[ring].name)
+		  .style("font-family", "Arial, Helvetica")
+		  .style("font-size", "15");
+		legend.selectAll(".legend" + quadrant + ring)
+		  .data(segmented[quadrant][ring])
+		  .enter()
+		    .append("text")
+		      .attr("class", "legend" + quadrant + ring)
+		      .attr("transform", function(d, i) { return legend_transform(quadrant, ring, i); })
+		      .text(function(d, i) { return d.id + ". " + d.label; })
+		      .style("font-family", "Arial, Helvetica")
+		      .style("font-size", "14")
+		      .style("color", function(d,i) {return d.color});
+	      }
+	    }
+	  }
+	}
   // layer for entries
   var rink = radar.append("g")
     .attr("id", "rink");

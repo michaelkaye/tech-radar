@@ -41,10 +41,17 @@ var zoomed = url.searchParams.get("z");
 if ( typeof zoomed == 'undefined') {
 	zoomed = null;
 }
+var widemode = url.searchParams.get("widemode");
+if ( typeof widemode == 'undefined') {
+	widemode = null;
+}
 radar_visualization({
   svg_id: "radar",
   width: 1790,
   height: 1000,
+  s_width: 900,
+  s_height: 900,
+  widemode: widemode,
   colors: {
     background: "#fff",
     grid: "#bbb",
@@ -226,6 +233,8 @@ The Tech Radar is a list of technologies, showing their progress through our ass
 <p>
 The Tech Radar is based on code by <a href="https://github.com/zalano/tech-radar/">Zalando</a> originally based on the <a href="https://www.thoughtworks.com/radar">pioneering work of ThoughtWorks</a>, our Tech Radar sets out the changes in technologies that are interesting in software development &mdash; changes that we think our engineering teams should pay attention to and consider using in their projects.
 </p>
+<p>
+<a href="?widemode=true">Wide</a> or <a href="index.html">Radar</a> displays are available.</p>
 </td></tr>
 </table>
 
